@@ -1,8 +1,8 @@
 #PBS -A ged
-#PBS -l nodes=1:ppn=3
+#PBS -l nodes=1:ppn=4
 #PBS -l walltime=160:00:00
-#PBS -l mem=75GB
-#PBS -N 5perQC
+#PBS -l mem=100GB
+#PBS -N PodarQC
 
 cd /mnt/research/ged/sherine/2015-metagenome-assembly/pipeline/ 
 
