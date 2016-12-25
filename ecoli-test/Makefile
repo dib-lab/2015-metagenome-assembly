@@ -88,123 +88,6 @@ megahit.qc.pe/final.contigs.fa: ecoli.pe.qc.fq.gz
 	/usr/bin/time  -a  -o megqc.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only --presets meta-large --12 ecoli.pe.qc.fq.gz -r ecoli.se.qc.fq.gz -o megahit.qc.pe 
 megahit-quality-assembly.fa: megahit.qc.pe/final.contigs.fa 
 	python ${MYSCRIPTS}/multi-rename.py assembly megahit.qc.pe/final.contigs.fa > megahit-quality-assembly.fa	 
-#----------------------------------------------------------------DIGINORM STARTS-----------------------------------------------------------------------------
-ecoli.ignore.long: ecoli.pe.qc.fq.gz
-	extract-long-sequences.py -l 20 ecoli.pe.qc.fq.gz -o ecoli.ignore.long
-
-ecoli.ignore.long.pe: 
-	extract-paired-reads.py ecoli.ignore.long
-	mv ecoli.pe.qc.fq.gz ecoli.old
-	gzip -c ecoli.ignore.long.pe > ecoli.pe.qc.fq.gz
-
-normC20k20.kh:ecoli.pe.qc.fq.gz
-	normalize-by-median.py -p -k 20 -C 20 -N 4 -x 1e9 --savegraph normC20k20.kh ecoli.pe.qc.fq.gz
-	normalize-by-median.py -C 20 --loadgraph normC20k20.kh --savegraph normC20k20.kh ecoli.se.qc.fq.gz
-
-ecoli.pe.qc.fq.gz.keep.abundfilt: normC20k20.kh
-	filter-abund.py -V normC20k20.kh *.keep 
-
-ecoli.pe.qc.fq.gz.keep.abundfilt.pe:  
-	extract-paired-reads.py ecoli.pe.qc.fq.gz.keep.abundfilt 
-
-ecoli.pe.qc.fq.gz.keep.abundfilt.se.keep:
-	normalize-by-median.py -C 5 -k 20 -N 4 -x 1e9 --savegraph normC5k20.kh -p ecoli.pe.qc.fq.gz.keep.abundfilt.pe 
-	normalize-by-median.py -C 5 --savegraph normC5k20.kh --loadgraph normC5k20.kh ecoli.pe.qc.fq.gz.keep.abundfilt.se \
-	ecoli.se.qc.fq.gz.keep.abundfilt
-
-ecoli.se.kak.qc.fq.gz:
-	cat  ecoli.pe.qc.fq.gz.keep.abundfilt.pe >  ecoli.pe.kak.qc.fq.gz
-	cat  ecoli.pe.qc.fq.gz.keep.abundfilt.se  ecoli.se.qc.fq.gz.keep.abundfilt >  ecoli.se.kak.qc.fq.gz 
-#---------------------------------------------------------------SPADES DIGINORM------------------------------------------------------------------------------
-spades-diginorm-1:*.pe.kak.qc.fq.gz
-	.spades-dig.sh \
-	touch spades-diginorm-1
-
-spades-diginorm-2: ecoli.pe.kak.qc.fq.gz ecoli.se.kak.qc.fq.gz
-	/usr/bin/time -a -o sdig.txt ${SPADES}/spades.py --meta --pe1-12 ecoli.pe.kak.qc.fq.gz -o ecoli.pe.kak.qc.spades.d
-	/usr/bin/time -a -o sdig.txt ${SPADES}/spades.py --meta --pe1-12 ecoli.se.kak.qc.fq.gz -o ecoli.se.kak.qc.spades.d
-
-finalize-spades-diginorm:  ecoli.spades.d/contigs.fasta 
-	python ${SANDBOX}/sandbox/calc-best-assembly.py ecoli.*e.kak.qc.spades.d/contigs.fasta -o spades-diginorm-best.fa
-	python ${MYSCRIPTS}/multi-rename.py assembly spades-diginorm-best.fa > spades-diginorm-assembly.fa
-#------------------------------------------------------------------IDBA DIGINORM-----------------------------------------------------------------------------
-idba-diginorm-1: *.pe.kak.qc.fq.gz  
-	.idba-dig.sh \
-	touch idba-diginorm-1
-
-idba-diginorm-2: ecoli.pe.kak.fa 
-	/usr/bin/time -a -o idig.txt idba_ud --pre_correction -r ecoli.pe.kak.fa  -o ecoli.idba.d.digi
-	#/opt/software/IDBAUD/1.1.0--GCC-4.4.5/binidba  --pre_correction -r ecoli.pe.kak.fa  -o ecoli.idba.d.digi
-
-finalize-idba-diginorm: ecoli.idba.d.digi/scaffold.fa	
-	python ${SANDBOX}/sandbox/calc-best-assembly.py ecoli.idba.d.digi/scaffold.fa -o idba-diginorm-best.fa
-	python ${MYSCRIPTS}/multi-rename.py assembly idba-diginorm-best.fa > idba-diginorm-assembly.fa
-#-------------------------------------------------------------Megahit DIGINORM------------------------------------------------------------------------------
-megahit-digi-1:
-	/usr/bin/time  -a  -o megdigi.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only -r ecoli.pe.kak.qc.fq.gz -o megahit.digi.pe
-	/usr/bin/time  -a  -o megdigi.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only -r ecoli.se.kak.qc.fq.gz -o megahit.digi.se
-
-#------------------------------------------------------------------PARTITION STARTS--------------------------------------------------------------------------
-protocol-partition-below: normC5k20.kh *.kak.*.fq.gz
-	python ${SANDBOX}/sandbox/filter-below-abund.py normC5k20.kh *.kak.*.fq.gz 
-
-
-protocol-partition-rename-1: ecoli.pe.kak.qc.fq.gz.below ecoli.se.kak.qc.fq.gz.below
-	mv ecoli.pe.kak.qc.fq.gz.below  ecoli.pe.kak.qc.fq.gz.below.fq &&  mv ecoli.se.kak.qc.fq.gz.below ecoli.se.kak.qc.fq.gz.below.fq 
-
-protocol-partition-run: normC5k20.kh ecoli.pe.kak.qc.fq.gz.below.fq  ecoli.se.kak.qc.fq.gz.below.fq 
-	do-partition.py -k 32 -x 1e9 --threads 4 kak *.kak.qc.fq.gz.below.fq
-
-
-protocol-partition-extract: *.part  
-	extract-partitions.py -X 100000 kak *.part
-
-
-protocol-partition-rename-2:  
-	./seperate.sh \
-	touch protocol-partition-rename-2
-
-protocol-partition-compress: 
-	gzip *.pe.fq  *.se.fq
-
-#------------------------------------------------------------------Spades Partition--------------------------------------------------------------------------
-spades-partition-1: kak*.pe.fq.gz
-	.spades-part.sh \
-	touch spades-partition-1
-
-spades-partition-2: *.pe.fq
-	.spades-part-run.sh \
-	touch spades-partition-2
-
-spades-partition-3: kak.group*.pe.fq.gz
-	.spades-part-finalize.sh \
-	touch spades-partition-3
-
-finalize-spades-partition: 
-	python ${MYSCRIPTS}/multi-rename.py assembly spades-partition-best.group*.fa > spades-partition-assembly.fa
-#-----------------------------------------------------------------IDBA Partition-----------------------------------------------------------------------------
-idba-partition-1: kak*.pe.fq.gz
-	.idba-part.sh \
-	touch idba-partition-1
-
-idba-partition-2: *.pe.fa 
-	.idba-part-run.sh \
-	touch idba-partition-2
-
-idba-partition-3: kak.group*.pe.fq.gz
-	.idba-part-finalize.sh \
-	touch idba-partition-3
-
-finalize-idba-partition:
-	python ${MYSCRIPTS}/multi-rename.py assembly idba-partition-best.group*.fa > idba-partition-assembly.fa
-#-------------------------------------------------------------------Megahit PARTITION------------------------------------------------------------------------
-megahit-part-1: 
-	.megahit-part.sh \
-        touch megahit-part-1
-
-megahit-part-2:
-	.megahit-part-finalize.sh \
-        touch megahit-part-2
 #-------------------------------------------------------------------Analysis--------------------------------------------------------------------------------
 megahit-quality-assembly500.fa:  idba-quality-assembly.fa  spades-quality-assembly.fa  megahit-quality-assembly.fa 
 	python ${MYSCRIPTS}/filter_assembly_mincontig.py  ${REFERENCE}  idba-quality-assembly.fa 500	
@@ -473,5 +356,96 @@ chimeric:  ${REFERENCE} ecoli.pe.qc.fq.gz
 	samtools view ecoli-pe.bam | grep 'SA:'  > ecoli-pe.chimeric
 	samtools view ecoli-se.bam | grep 'SA:'  > ecoli-se.chimeric
 	bash ${MYSCRIPTS}/count-chimeric.sh 
+#----------------------------------------------------------------DIGINORM STARTS-----------------------------------------------------------------------------
+sample5per.ignore.long: sample5per.pe.qc.fq.gz
+	extract-long-sequences.py -l 20 sample5per.pe.qc.fq.gz -o sample5per.ignore.long
+
+sample5per.ignore.long.pe: sample5per.ignore.long
+	extract-paired-reads.py sample5per.ignore.long
+	mv sample5per.pe.qc.fq.gz sample5per.old
+	gzip -c sample5per.ignore.long.pe > sample5per.pe.qc.fq.gz
+
+normC20k20.kh: sample5per.ignore.long.pe sample5per.pe.qc.fq.gz
+	normalize-by-median.py -p -k 20 -C 20 -N 4 -x 1e9 --savegraph normC20k20.kh sample5per.pe.qc.fq.gz
+	normalize-by-median.py -C 20 --loadgraph normC20k20.kh --savegraph normC20k20.kh sample5per.se.qc.fq.gz
+
+sample5per.pe.qc.fq.gz.keep.abundfilt: 
+	filter-abund.py -V normC20k20.kh *.keep 
+
+sample5per.pe.qc.fq.gz.keep.abundfilt.pe: sample5per.pe.qc.fq.gz.keep.abundfilt
+	extract-paired-reads.py sample5per.pe.qc.fq.gz.keep.abundfilt 
+
+sample5per.pe.qc.fq.gz.keep.abundfilt.se.keep: sample5per.pe.qc.fq.gz.keep.abundfilt.pe
+	normalize-by-median.py -C 5 -k 20 -N 4 -x 1e9 --savegraph normC5k20.kh -p sample5per.pe.qc.fq.gz.keep.abundfilt.pe 
+	normalize-by-median.py -C 5 --savegraph normC5k20.kh --loadgraph normC5k20.kh sample5per.pe.qc.fq.gz.keep.abundfilt.se \
+	sample5per.se.qc.fq.gz.keep.abundfilt
+
+sample5per.pe.kak.qc.fq.gz: sample5per.pe.qc.fq.gz.keep.abundfilt.se.keep
+	gzip -c  sample5per.pe.qc.fq.gz.keep.abundfilt.pe >  sample5per.pe.kak.qc.fq.gz
+	cat  sample5per.pe.qc.fq.gz.keep.abundfilt.se  sample5per.se.qc.fq.gz.keep.abundfilt |gzip -c >  sample5per.se.kak.qc.fq.gz 
+#---------------------------------------------------------------SPADES DIGINORM------------------------------------------------------------------------------
+sample5per.spades.digi/scaffolds.fasta: sample5per.pe.kak.qc.fq.gz
+	/usr/bin/time -a -o sqc.txt  ${SPADES}/spades.py --meta --pe1-12 sample5per.pe.kak.qc.fq.gz --pe1-s sample5per.se.kak.qc.fq.gz -o sample5per.spades.digi
+        
+spades-diginorm-assembly.fa:  sample5per.spades.digi/scaffolds.fasta
+	python ${MYSCRIPTS}/sandbox/multi-rename.py assembly sample5per.spades.digi/scaffolds.fasta > spades-diginorm-assembly.fa
+#------------------------------------------------------------------IDBA DIGINORM-----------------------------------------------------------------------------
+sample5per.pe.kak.qc.fa: sample5per.pe.kak.qc.fq.gz	
+	fastq-to-fasta.py -n sample5per.pe.kak.qc.fq.gz  > sample5per.pe.kak.qc.fa
+
+sample5per.idba.digi/scaffold.fa: sample5per.pe.kak.qc.fa
+	/usr/bin/time -a -o idig.txt idba_ud --pre_correction -r sample5per.pe.kak.qc.fa  -o sample5per.idba.d.digi
+
+idba-diginorm-assembly.fa: sample5per.idba.digi/scaffold.fa
+	python ${MYSCRIPTS}/sandbox/multi-rename.py assembly sample5per.idba.digi/scaffold.fa > idba-diginorm-assembly.fa
+#-------------------------------------------------------------Megahit DIGINORM------------------------------------------------------------------------------
+megahit.digi/final.contigs.fa: sample5per.pe.kak.qc.fq.gz
+	/usr/bin/time  -a  -o megqc.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only --presets meta-large --12 sample5per.pe.kak.qc.fq.gz -r sample5per.se.kak.qc.fq.gz -o megahit.digi 
+
+megahit-diginorm-assembly.fa: megahit.digi/final.contigs.fa
+	python ${MYSCRIPTS}/multi-rename.py assembly megahit.digi/final.contigs.fa > megahit-diginorm-assembly.fa        
+#------------------------------------------------------------------PARTITION STARTS--------------------------------------------------------------------------
+sample5per.kak.ignore.long: sample5per.pe.qc.fq.gz
+	extract-long-sequences.py -l 20 sample5per.pe.kak.qc.fq.gz -o sample5per.kak.ignore.long
+
+sample5per.kak.ignore.long.pe: sample5per.kak.ignore.long
+	extract-paired-reads.py sample5per.kak.ignore.long
+	mv sample5per.pe.kak.qc.fq.gz sample5per.kak.old
+	gzip -c sample5per.kak.ignore.long.pe > sample5per.pe.kak.qc.fq.gz
+
+sample5per.pe.kak.qc.fq.gz.below: sample5per.pe.kak.qc.fq.gz
+	python ${SANDBOX}/sandbox/filter-below-abund.py normC5k20.kh sample5per.*e.kak.qc.fq.gz 
+
+
+sample5per.pe.kak.qc.fq.gz.below.fq: sample5per.pe.kak.qc.fq.gz.below
+	mv sample5per.pe.kak.qc.fq.gz.below  sample5per.pe.kak.qc.fq.gz.below.fq && mv sample5per.se.kak.qc.fq.gz.below sample5per.se.kak.qc.fq.gz.below.fq 
+
+sample5per.pe.kak.qc.fq.gz.below.fq.part:  
+	do-partition.py -k 32 -x 1e9 --threads 4 kak sample5per.*.kak.qc.fq.gz.below.fq
+
+kak.group0039.fq:  
+	extract-partitions.py -X 100000 kak *.part
+
+kak.group0039.pe.fq.gz:  
+	$(foreach i, $(partitions), extract-paired-reads.py kak.group00$(i).fq;) 
+	$(foreach i,$(partitions), mv kak.group00$(i).fq.pe kak.group00$(i).pe.fq; mv kak.group00$(i).fq.se kak.group00$(i).se.fq; )            
+	$(foreach i,$(partitions), gzip kak.group00$(i).pe.fq; gzip kak.group00$(i).se.fq; )
+#------------------------------------------------------------------Spades Partition--------------------------------------------------------------------------
+spades-partition-assembly.fa: kak.group0039.pe.fq.gz
+	$(foreach i, $(partitions) /usr/bin/time -a -o spart.txt  ${SPADES}/spades.py --meta --pe1-12 kak.group00$(i).pe.fq.gz --pe1-s kak.group00$(i).se.fq.gz -o kak.group00$(i).spades;) 
+	$(foreach i, $(partitions), python ${MYSCRIPTS}/multi-rename.py assembly kak.group00$(i).spades/contigs.fasta > spades-partition-assembly.fa;) 
+#-----------------------------------------------------------------IDBA Partition-----------------------------------------------------------------------------
+kak.group0039.pe.fa: kak.group0039.pe.fq.gz
+	$(foreach i, $(partitions), fastq-to-fasta.py -n kak.group00$(i).pe.fq.gz >kak.group00$(i).pe.fa;) 
+
+kak.group0039.idba/scaffold.fa: kak.group0039.pe.fa
+	$(foreach i, $(partitions), /usr/bin/time -a -o ipart.txt idba_ud --pre_correction -r kak.group00$(i).pe.fa  -o kak.group00$(i).idba;) 
+
+idba-partition-assembly.fa: kak.group0039.idba/scaffold.fa
+	$(foreach i, $(partitions), python ${MYSCRIPTS}/multi-rename.py assembly kak.group00$(i).idba/scaffold.fa > idba-partition-assembly.fa;) 
+#-------------------------------------------------------------------Megahit PARTITION------------------------------------------------------------------------
+megahit-partition-assembly: 
+	$(foreach i, $(partitions), /usr/bin/time -a -o mpart.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only --presets meta-large --12 kak.group00$(i).pe.fq.gz -r kak.group00$(i).se.fq.gz -o kak.group00$(i).megahit;) 
+	$(foreach i, $(partitions), python ${MYSCRIPTS}/multi-rename.py assembly kak.group00$(i).megahit > megahit-partition-assembly.fa;)
 
 #---------------------------------------------------------------Cleaning ------------------------------------------------------------------------------------	
