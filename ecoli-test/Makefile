@@ -8,6 +8,7 @@ TOOLKIT =/opt/software/FASTX/0.0.14--GCC-4.4.5/bin
 SANDBOX = /opt/software/khmer/2.0--GCC-4.8.2
 SCRIPTS = /opt/software/khmer/2.0--GCC-4.8.2/scripts
 mc = 1000 2000 3000
+PREFIX = ecoli 
 #-----------------------------------------------------------All quality-------------------------------------------------------------------------------------
 quality: ecoli-1.fastq.gz   ecoli-2.fastq.gz \
 	ecoli.se.qc.fq.gz 
@@ -357,71 +358,71 @@ chimeric:  ${REFERENCE} ecoli.pe.qc.fq.gz
 	samtools view ecoli-se.bam | grep 'SA:'  > ecoli-se.chimeric
 	bash ${MYSCRIPTS}/count-chimeric.sh 
 #----------------------------------------------------------------DIGINORM STARTS-----------------------------------------------------------------------------
-sample5per.ignore.long: sample5per.pe.qc.fq.gz
-	extract-long-sequences.py -l 20 sample5per.pe.qc.fq.gz -o sample5per.ignore.long
+ecoli.ignore.long: ecoli.pe.qc.fq.gz
+	extract-long-sequences.py -l 20 ecoli.pe.qc.fq.gz -o ecoli.ignore.long
 
-sample5per.ignore.long.pe: sample5per.ignore.long
-	extract-paired-reads.py sample5per.ignore.long
-	mv sample5per.pe.qc.fq.gz sample5per.old
-	gzip -c sample5per.ignore.long.pe > sample5per.pe.qc.fq.gz
+ecoli.ignore.long.pe: ecoli.ignore.long
+	extract-paired-reads.py ecoli.ignore.long
+	mv ecoli.pe.qc.fq.gz ecoli.old
+	gzip -c ecoli.ignore.long.pe > ecoli.pe.qc.fq.gz
 
-normC20k20.kh: sample5per.ignore.long.pe sample5per.pe.qc.fq.gz
-	normalize-by-median.py -p -k 20 -C 20 -N 4 -x 1e9 --savegraph normC20k20.kh sample5per.pe.qc.fq.gz
-	normalize-by-median.py -C 20 --loadgraph normC20k20.kh --savegraph normC20k20.kh sample5per.se.qc.fq.gz
+normC20k20.kh: ecoli.ignore.long.pe ecoli.pe.qc.fq.gz
+	normalize-by-median.py -p -k 20 -C 20 -N 4 -x 1e9 --savegraph normC20k20.kh ecoli.pe.qc.fq.gz
+	normalize-by-median.py -C 20 --loadgraph normC20k20.kh --savegraph normC20k20.kh ecoli.se.qc.fq.gz
 
-sample5per.pe.qc.fq.gz.keep.abundfilt: 
+ecoli.pe.qc.fq.gz.keep.abundfilt: 
 	filter-abund.py -V normC20k20.kh *.keep 
 
-sample5per.pe.qc.fq.gz.keep.abundfilt.pe: sample5per.pe.qc.fq.gz.keep.abundfilt
-	extract-paired-reads.py sample5per.pe.qc.fq.gz.keep.abundfilt 
+ecoli.pe.qc.fq.gz.keep.abundfilt.pe: ecoli.pe.qc.fq.gz.keep.abundfilt
+	extract-paired-reads.py ecoli.pe.qc.fq.gz.keep.abundfilt 
 
-sample5per.pe.qc.fq.gz.keep.abundfilt.se.keep: sample5per.pe.qc.fq.gz.keep.abundfilt.pe
-	normalize-by-median.py -C 5 -k 20 -N 4 -x 1e9 --savegraph normC5k20.kh -p sample5per.pe.qc.fq.gz.keep.abundfilt.pe 
-	normalize-by-median.py -C 5 --savegraph normC5k20.kh --loadgraph normC5k20.kh sample5per.pe.qc.fq.gz.keep.abundfilt.se \
-	sample5per.se.qc.fq.gz.keep.abundfilt
+ecoli.pe.qc.fq.gz.keep.abundfilt.se.keep: ecoli.pe.qc.fq.gz.keep.abundfilt.pe
+	normalize-by-median.py -C 5 -k 20 -N 4 -x 1e9 --savegraph normC5k20.kh -p ecoli.pe.qc.fq.gz.keep.abundfilt.pe 
+	normalize-by-median.py -C 5 --savegraph normC5k20.kh --loadgraph normC5k20.kh ecoli.pe.qc.fq.gz.keep.abundfilt.se \
+	ecoli.se.qc.fq.gz.keep.abundfilt
 
-sample5per.pe.kak.qc.fq.gz: sample5per.pe.qc.fq.gz.keep.abundfilt.se.keep
-	gzip -c  sample5per.pe.qc.fq.gz.keep.abundfilt.pe >  sample5per.pe.kak.qc.fq.gz
-	cat  sample5per.pe.qc.fq.gz.keep.abundfilt.se  sample5per.se.qc.fq.gz.keep.abundfilt |gzip -c >  sample5per.se.kak.qc.fq.gz 
+ecoli.pe.kak.qc.fq.gz: ecoli.pe.qc.fq.gz.keep.abundfilt.se.keep
+	gzip -c  ecoli.pe.qc.fq.gz.keep.abundfilt.pe >  ecoli.pe.kak.qc.fq.gz
+	cat  ecoli.pe.qc.fq.gz.keep.abundfilt.se  ecoli.se.qc.fq.gz.keep.abundfilt |gzip -c >  ecoli.se.kak.qc.fq.gz 
 #---------------------------------------------------------------SPADES DIGINORM------------------------------------------------------------------------------
-sample5per.spades.digi/scaffolds.fasta: sample5per.pe.kak.qc.fq.gz
-	/usr/bin/time -a -o sqc.txt  ${SPADES}/spades.py --meta --pe1-12 sample5per.pe.kak.qc.fq.gz --pe1-s sample5per.se.kak.qc.fq.gz -o sample5per.spades.digi
+ecoli.spades.digi/scaffolds.fasta: ecoli.pe.kak.qc.fq.gz
+	/usr/bin/time -a -o sqc.txt  ${SPADES}/spades.py --meta --pe1-12 ecoli.pe.kak.qc.fq.gz --pe1-s ecoli.se.kak.qc.fq.gz -o ecoli.spades.digi
         
-spades-diginorm-assembly.fa:  sample5per.spades.digi/scaffolds.fasta
-	python ${MYSCRIPTS}/sandbox/multi-rename.py assembly sample5per.spades.digi/scaffolds.fasta > spades-diginorm-assembly.fa
+spades-diginorm-assembly.fa:  ecoli.spades.digi/scaffolds.fasta
+	python ${MYSCRIPTS}/sandbox/multi-rename.py assembly ecoli.spades.digi/scaffolds.fasta > spades-diginorm-assembly.fa
 #------------------------------------------------------------------IDBA DIGINORM-----------------------------------------------------------------------------
-sample5per.pe.kak.qc.fa: sample5per.pe.kak.qc.fq.gz	
-	fastq-to-fasta.py -n sample5per.pe.kak.qc.fq.gz  > sample5per.pe.kak.qc.fa
+ecoli.pe.kak.qc.fa: ecoli.pe.kak.qc.fq.gz	
+	fastq-to-fasta.py -n ecoli.pe.kak.qc.fq.gz  > ecoli.pe.kak.qc.fa
 
-sample5per.idba.digi/scaffold.fa: sample5per.pe.kak.qc.fa
-	/usr/bin/time -a -o idig.txt idba_ud --pre_correction -r sample5per.pe.kak.qc.fa  -o sample5per.idba.d.digi
+ecoli.idba.digi/scaffold.fa: ecoli.pe.kak.qc.fa
+	/usr/bin/time -a -o idig.txt idba_ud --pre_correction -r ecoli.pe.kak.qc.fa  -o ecoli.idba.d.digi
 
-idba-diginorm-assembly.fa: sample5per.idba.digi/scaffold.fa
-	python ${MYSCRIPTS}/sandbox/multi-rename.py assembly sample5per.idba.digi/scaffold.fa > idba-diginorm-assembly.fa
+idba-diginorm-assembly.fa: ecoli.idba.digi/scaffold.fa
+	python ${MYSCRIPTS}/sandbox/multi-rename.py assembly ecoli.idba.digi/scaffold.fa > idba-diginorm-assembly.fa
 #-------------------------------------------------------------Megahit DIGINORM------------------------------------------------------------------------------
-megahit.digi/final.contigs.fa: sample5per.pe.kak.qc.fq.gz
-	/usr/bin/time  -a  -o megqc.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only --presets meta-large --12 sample5per.pe.kak.qc.fq.gz -r sample5per.se.kak.qc.fq.gz -o megahit.digi 
+megahit.digi/final.contigs.fa: ecoli.pe.kak.qc.fq.gz
+	/usr/bin/time  -a  -o megqc.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only --presets meta-large --12 ecoli.pe.kak.qc.fq.gz -r ecoli.se.kak.qc.fq.gz -o megahit.digi 
 
 megahit-diginorm-assembly.fa: megahit.digi/final.contigs.fa
 	python ${MYSCRIPTS}/multi-rename.py assembly megahit.digi/final.contigs.fa > megahit-diginorm-assembly.fa        
 #------------------------------------------------------------------PARTITION STARTS--------------------------------------------------------------------------
-sample5per.kak.ignore.long: sample5per.pe.qc.fq.gz
-	extract-long-sequences.py -l 20 sample5per.pe.kak.qc.fq.gz -o sample5per.kak.ignore.long
+ecoli.kak.ignore.long: ecoli.pe.qc.fq.gz
+	extract-long-sequences.py -l 20 ecoli.pe.kak.qc.fq.gz -o ecoli.kak.ignore.long
 
-sample5per.kak.ignore.long.pe: sample5per.kak.ignore.long
-	extract-paired-reads.py sample5per.kak.ignore.long
-	mv sample5per.pe.kak.qc.fq.gz sample5per.kak.old
-	gzip -c sample5per.kak.ignore.long.pe > sample5per.pe.kak.qc.fq.gz
+ecoli.kak.ignore.long.pe: ecoli.kak.ignore.long
+	extract-paired-reads.py ecoli.kak.ignore.long
+	mv ecoli.pe.kak.qc.fq.gz ecoli.kak.old
+	gzip -c ecoli.kak.ignore.long.pe > ecoli.pe.kak.qc.fq.gz
 
-sample5per.pe.kak.qc.fq.gz.below: sample5per.pe.kak.qc.fq.gz
-	python ${SANDBOX}/sandbox/filter-below-abund.py normC5k20.kh sample5per.*e.kak.qc.fq.gz 
+ecoli.pe.kak.qc.fq.gz.below: ecoli.pe.kak.qc.fq.gz
+	python ${SANDBOX}/sandbox/filter-below-abund.py normC5k20.kh ecoli.*e.kak.qc.fq.gz 
 
 
-sample5per.pe.kak.qc.fq.gz.below.fq: sample5per.pe.kak.qc.fq.gz.below
-	mv sample5per.pe.kak.qc.fq.gz.below  sample5per.pe.kak.qc.fq.gz.below.fq && mv sample5per.se.kak.qc.fq.gz.below sample5per.se.kak.qc.fq.gz.below.fq 
+ecoli.pe.kak.qc.fq.gz.below.fq: ecoli.pe.kak.qc.fq.gz.below
+	mv ecoli.pe.kak.qc.fq.gz.below  ecoli.pe.kak.qc.fq.gz.below.fq && mv ecoli.se.kak.qc.fq.gz.below ecoli.se.kak.qc.fq.gz.below.fq 
 
-sample5per.pe.kak.qc.fq.gz.below.fq.part:  
-	do-partition.py -k 32 -x 1e9 --threads 4 kak sample5per.*.kak.qc.fq.gz.below.fq
+ecoli.pe.kak.qc.fq.gz.below.fq.part:  
+	do-partition.py -k 32 -x 1e9 --threads 4 kak ecoli.*.kak.qc.fq.gz.below.fq
 
 kak.group0039.fq:  
 	extract-partitions.py -X 100000 kak *.part
@@ -450,7 +451,7 @@ megahit-partition-assembly:
 
 #-----------------------------------------------------------------SAMPLING------------------------------------------------------------------------------------
 #prepare 
-SRR606249-half2.fastq: ${PREFIX}-1.fastq.gz  ${PREFIX}-2.fastq.gz
+ecoli-half2.fastq: ${PREFIX}-1.fastq.gz  ${PREFIX}-2.fastq.gz
 	gunzip -c $< > ${PREFIX}-1.fastq	
 	gunzip -c $(word 2, $^) > ${PREFIX}-2.fastq
 	python ${MYSCRIPTS}/cat-seq.py $^ > ${PREFIX}.fastq
