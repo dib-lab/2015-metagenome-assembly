@@ -448,4 +448,60 @@ megahit-partition-assembly:
 	$(foreach i, $(partitions), /usr/bin/time -a -o mpart.txt python ${MEGAHIT}/megahit -l 101 -m 1e+10 --cpu-only --presets meta-large --12 kak.group00$(i).pe.fq.gz -r kak.group00$(i).se.fq.gz -o kak.group00$(i).megahit;) 
 	$(foreach i, $(partitions), python ${MYSCRIPTS}/multi-rename.py assembly kak.group00$(i).megahit > megahit-partition-assembly.fa;)
 
+#-----------------------------------------------------------------SAMPLING------------------------------------------------------------------------------------
+#prepare 
+SRR606249-half2.fastq: ${PREFIX}-1.fastq.gz  ${PREFIX}-2.fastq.gz
+	gunzip -c $< > ${PREFIX}-1.fastq	
+	gunzip -c $(word 2, $^) > ${PREFIX}-2.fastq
+	python ${MYSCRIPTS}/cat-seq.py $^ > ${PREFIX}.fastq
+	split -l  ${NREADSPERFILE}*4  ${PREFIX}.fastq temp
+	mv tempaa > ${PREFIX}-half1.fastq 
+	mv tempab > ${PREFIX}-half2.fastq
+
+#sample75
+sample75per-2.fastq.gz: ${PREFIX}-half1.fastq  ${PREFIX}-half2.fastq
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half1.fastq 13703687 >  sample75per.fastq
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half2.fastq 13703687 >> sample75per.fastq	
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half1.fastq 13703687 >> sample75per.fastq    
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half2.fastq 13703687 >> sample75per.fastq
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half1.fastq 13703687 >> sample75per.fastq
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half2.fastq 13703687 >> sample75per.fastq    
+	python ${MYSCRIPTS}/split.py sample75per.fastq sample75per-1.fastq sample75per-2.fastq
+	gzip -c sample75per-1.fastq > sample75per-1.fastq.gz 
+	gzip -c sample75per-2.fastq > sample75per-2.fastq.gz
+
+#sample50
+sample50per-2.fastq.gz: ${PREFIX}-half1.fastq ${PREFIX}-half2.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half1.fastq 13703687 >  sample50per.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half2.fastq 13703687 >> sample50per.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half1.fastq 13703687 >> sample50per.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half2.fastq 13703687 >> sample50per.fastq
+	python ${MYSCRIPTS}/split.py sample50per.fastq sample50per-1.fastq sample50per-2.fastq          
+	gzip -c sample50per-1.fastq > sample50per-1.fastq.gz 
+	gzip -c sample50per-2.fastq > sample50per-2.fastq.gz 
+#sample25
+sample25per-2.fastq.gz: ${PREFIX}-half1.fastq  ${PREFIX}-half2.fastq
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half1.fastq 13703687 > sample25per.fastq
+	python ${MYSCRIPTS}/sampling.py  ${PREFIX}-half2.fastq 13703687 >> sample25per.fastq
+	python ${MYSCRIPTS}/split.py sample25per.fastq sample25per-1.fastq sample25per-2.fastq
+	gzip -c sample25per-1.fastq > sample25per-1.fastq.gz 
+	gzip -c sample25per-2.fastq > sample25per-2.fastq.gz  
+
+#sample12.5
+sample12p5per-2.fastq.gz: ${PREFIX}-half1.fastq ${PREFIX}-half2.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half1.fastq 6851844 >  sample12p5per.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half2.fastq 6851843 >> sample12p5per.fastq
+	python ${MYSCRIPTS}/split.py sample12p5per.fastq sample12p5per-1.fastq sample12p5per-2.fastq
+	gzip -c sample12p5per-1.fastq > sample12p5per-1.fastq.gz 
+	gzip -c sample12p5per-2.fastq > sample12p5per-2.fastq.gz 
+
+
+#sampleonemillion
+sampleonem-2.fastq.gz: ${PREFIX}-half1.fastq ${PREFIX}-half2.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half1.fastq.gz  500000 >  sampleonem.fastq
+	python ${MYSCRIPTS}/sampling.py ${PREFIX}-half2.fastq.gz  500000 >> sampleonem.fastq
+	python ${MYSCRIPTS}/split.py sampleone-m.fastq sampleonem-1.fastq sampleonem-2.fastq 
+	gzip -c sampleonem-1.fastq > sampleonem-1.fastq.gz 
+	gzip -c sampleonem-2.fastq > sampleonem-2.fastq.gz 
+
 #---------------------------------------------------------------Cleaning ------------------------------------------------------------------------------------	
