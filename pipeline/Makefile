@@ -463,6 +463,117 @@ mqc500.dist: SRR606249.pe.qc.fq.gz megahit-quality-assembly500.fa
 	python ${SCRIPTS}/abundance-dist.py -s qc.counts.kh spades-quality-assembly500.fa  sqc500.dist -s
 	python ${SCRIPTS}/abundance-dist.py -s qc.counts.kh megahit-quality-assembly500.fa mqc500.dist -s
 
+#-----------------------------------------------------------More into Common Uncovered Top Genomes-----------------------------------------------------------
+Thermus_thermophilus_HB27: mircea.fa 
+	python extract-common-uncovered-genomes.py  
+
+shewanella.mapped-reads.fa: Thermus_thermophilus_HB27 
+	mv Shewanella_baltica_OS223, shewanella
+	bwa index  shewanella
+	bwa aln  shewanella SRR606249.pe.qc.fq.gz   >   shewanella-ref.pe.sai
+	bwa aln  shewanella SRR606249.se.qc.fq.gz   >   shewanella-ref.se.sai
+	bwa samse  shewanella  shewanella-ref.pe.sai  SRR606249.pe.qc.fq.gz > shewanella-ref.pe.sam
+	bwa samse  shewanella  shewanella-ref.se.sai  SRR606249.se.qc.fq.gz > shewanella-ref.se.sam
+	samtools faidx  shewanella
+	samtools import shewanella.fai shewanella-ref.pe.sam  shewanella-ref.pe.bam
+	samtools import shewanella.fai shewanella-ref.se.sam  shewanella-ref.se.bam
+	samtools view -h -F 4  shewanella-ref.pe.bam >  shewanella.mapped.pe.bam
+	samtools view -h -F 4  shewanella-ref.se.bam >  shewanella.mapped.se.bam
+	bash  ${MYSCRIPTS}/get-mapped.sh  shewanella.mapped.pe.bam > shewanella.mapped-reads.fa
+	bash  ${MYSCRIPTS}/get-mapped.sh  shewanella.mapped.se.bam >> shewanella.mapped-reads.fa
+
+fusobact.mapped-reads.fa: Thermus_thermophilus_HB27	
+	mv Fusobacterium_nucleatum_subsp._nucleatum_ATCC_25586 fusobact
+	bwa index fusobact
+	bwa aln  fusobact SRR606249.pe.qc.fq.gz   >  fusobact-ref.pe.sai
+	bwa aln  fusobact SRR606249.se.qc.fq.gz   >  fusobact-ref.se.sai
+	bwa samse  fusobact  fusobact-ref.pe.sai  SRR606249.pe.qc.fq.gz > fusobact-ref.pe.sam
+	bwa samse  fusobact  fusobact-ref.se.sai  SRR606249.se.qc.fq.gz > fusobact-ref.se.sam
+	samtools faidx  fusobact
+	samtools import fusobact.fai fusobact-ref.pe.sam  fusobact-ref.pe.bam
+	samtools import fusobact.fai fusobact-ref.se.sam  fusobact-ref.se.bam
+	samtools view -h -F 4  fusobact-ref.pe.bam > fusobact.mapped.pe.bam
+	samtools view -h -F 4  fusobact-ref.se.bam > fusobact.mapped.se.bam
+	bash  ${MYSCRIPTS}/get-mapped.sh  fusobact.mapped.pe.bam > fusobact.mapped-reads.fa
+	bash  ${MYSCRIPTS}/get-mapped.sh  fusobact.mapped.se.bam >> fusobact.mapped-reads.fa
+	
+
+desulfov.mapped-reads.fa: Thermus_thermophilus_HB27  
+	mv Desulfovibrio_vulgaris_DP4 desulfov
+	bwa index desulfov
+	bwa aln  desulfov SRR606249.pe.qc.fq.gz   >  desulfov-ref.pe.sai
+	bwa aln  desulfov SRR606249.se.qc.fq.gz   >  desulfov-ref.se.sai
+	bwa samse  desulfov  desulfov-ref.pe.sai  SRR606249.pe.qc.fq.gz > desulfov-ref.pe.sam
+	bwa samse  desulfov  desulfov-ref.se.sai  SRR606249.se.qc.fq.gz > desulfov-ref.se.sam
+	samtools faidx  desulfov
+	samtools import desulfov.fai desulfov-ref.pe.sam  desulfov-ref.pe.bam
+	samtools import desulfov.fai desulfov-ref.se.sam  desulfov-ref.se.bam
+	samtools view -h -F 4  desulfov-ref.pe.bam > desulfov.mapped.pe.bam
+	samtools view -h -F 4  desulfov-ref.se.bam > desulfov.mapped.se.bam
+	bash  ${MYSCRIPTS}/get-mapped.sh  desulfov.mapped.pe.bam > desulfov.mapped-reads.fa
+	bash  ${MYSCRIPTS}/get-mapped.sh  desulfov.mapped.se.bam >> desulfov.mapped-reads.fa	
+
+
+enteroco.mapped-reads.fa: Thermus_thermophilus_HB27 
+	mv Enterococcus_faecalis_V583 enteroco
+	bwa index enteroco
+	bwa aln  enteroco SRR606249.pe.qc.fq.gz   >  enteroco-ref.pe.sai
+	bwa aln  enteroco SRR606249.se.qc.fq.gz   >  enteroco-ref.se.sai
+	bwa samse  enteroco  enteroco-ref.pe.sai  SRR606249.pe.qc.fq.gz > enteroco-ref.pe.sam
+	bwa samse  enteroco  enteroco-ref.se.sai  SRR606249.se.qc.fq.gz > enteroco-ref.se.sam
+	samtools faidx  enteroco
+	samtools import enteroco.fai enteroco-ref.pe.sam  enteroco-ref.pe.bam
+	samtools import enteroco.fai enteroco-ref.se.sam  enteroco-ref.se.bam
+	samtools view -h -F 4  enteroco-ref.pe.bam > enteroco.mapped.pe.bam
+	samtools view -h -F 4  enteroco-ref.se.bam > enteroco.mapped.se.bam
+	bash  ${MYSCRIPTS}/get-mapped.sh  enteroco.mapped.pe.bam > enteroco.mapped-reads.fa
+	bash  ${MYSCRIPTS}/get-mapped.sh  enteroco.mapped.se.bam >> enteroco.mapped-reads.fa
+
+thermus.mapped-reads.fa: Thermus_thermophilus_HB27 
+	mv Thermus_thermophilus_HB27 thermus
+	
+	bwa index thermus
+	bwa aln  thermus SRR606249.pe.qc.fq.gz   >  thermus-ref.pe.sai
+	bwa aln  thermus SRR606249.se.qc.fq.gz   >  thermus-ref.se.sai
+	bwa samse  thermus  thermus-ref.pe.sai  SRR606249.pe.qc.fq.gz > thermus-ref.pe.sam
+	bwa samse  thermus  thermus-ref.se.sai  SRR606249.se.qc.fq.gz > thermus-ref.se.sam
+	samtools faidx  thermus
+	samtools import thermus.fai thermus-ref.pe.sam  thermus-ref.pe.bam
+	samtools import thermus.fai thermus-ref.se.sam  thermus-ref.se.bam
+	samtools view -h -F 4  thermus-ref.pe.bam > thermus.mapped.pe.bam
+	samtools view -h -F 4  thermus-ref.se.bam > thermus.mapped.se.bam
+	bash  ${MYSCRIPTS}/get-mapped.sh  thermus.mapped.pe.bam > thermus.mapped-reads.fa
+	bash  ${MYSCRIPTS}/get-mapped.sh  thermus.mapped.se.bam >> thermus.mapped-reads.fa
+
+uncovered-genomes-coverage: shewanella.mapped-reads.fa fusobact.mapped-reads.fa \
+	desulfov.mapped-reads.fa enteroco.mapped-reads.fa  thermus.mapped-reads.fa 
+
+
+	samtools merge  shewanella-qc.bam  shewanella-ref.pe.bam shewanella-ref.se.bam
+	samtools view -h -o  shewanella-qc.sam  shewanella-qc.bam 
+	python ${MYSCRIPTS}/coverage-profile.py  shewanella  shewanella-qc.sam shewanella.coverage 
+
+	samtools merge  fusobact-qc.bam  fusobact-ref.pe.bam fusobact-ref.se.bam
+	samtools view -h -o  fusobact-qc.sam  fusobact-qc.bam 
+	python ${MYSCRIPTS}/coverage-profile.py  fusobact  fusobact-qc.sam fusobact.coverage
+
+	samtools merge desulfov-qc.bam  desulfov-ref.pe.bam desulfov-ref.se.bam
+	samtools view -h -o desulfov-qc.sam  desulfov-qc.bam 
+	python ${MYSCRIPTS}/coverage-profile.py  desulfov  desulfov-qc.sam desulfov.coverage
+
+	 
+	samtools merge enteroco-qc.bam  enteroco-ref.pe.bam enteroco-ref.se.bam
+	samtools view -h -o enteroco-qc.sam  enteroco-qc.bam
+	python ${MYSCRIPTS}/coverage-profile.py enteroco  enteroco-qc.sam enteroco.coverage
+	 
+
+	samtools merge thermus-qc.bam  thermus-ref.pe.bam thermus-ref.se.bam
+	samtools view -h -o  thermus-qc.sam  thermus-qc.bam 
+	python ${MYSCRIPTS}/coverage-profile.py thermus thermus-qc.sam thermus.coverage 
+
+
+
+
 #------------------------------------------------------------Finding Chimeric Reads-------------------------------------------------------------------------- 
 #This is an ignored part 
 chimeric:  ${REFERENCE} SRR606249.pe.qc.fq.gz
