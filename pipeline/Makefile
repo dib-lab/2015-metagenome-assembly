@@ -8,6 +8,7 @@ TOOLKIT =/opt/software/FASTX/0.0.14--GCC-4.4.5/bin
 SANDBOX = /opt/software/khmer/2.0--GCC-4.8.2
 SCRIPTS = /opt/software/khmer/2.0--GCC-4.8.2/scripts
 mc = 1000 2000 3000
+newref = /mnt/home/ctb/2015-metagenome-assembly/new-refs/new-refs.fa 
 #-----------------------------------------------------------All quality-------------------------------------------------------------------------------------
 quality: SRR606249-1.fastq.gz   SRR606249-2.fastq.gz \
 	SRR606249.se.qc.fq.gz 
@@ -571,8 +572,15 @@ uncovered-genomes-coverage: shewanella.mapped-reads.fa fusobact.mapped-reads.fa 
 	samtools view -h -o  thermus-qc.sam  thermus-qc.bam 
 	python ${MYSCRIPTS}/coverage-profile.py thermus thermus-qc.sam thermus.coverage 
 
+#-------------------------------------------------Unaligning unaligned Contigs to the new Reference ---------------------------------------------------------
+newref-stats: assemblies.stats.QC.AMBIGUOUS.99
+ 
+	${NUCMER}/nucmer --coords -p  unaligned-iqc ${newref}  iqc500.QC.AMBIGUOUS.99.unaligned
+	${NUCMER}/nucmer --coords -p  unaligned-sqc ${newref}  sqc500.QC.AMBIGUOUS.99.unaligned 
+	${NUCMER}/nucmer --coords -p  unaligned-mqc ${newref}  mqc500.QC.AMBIGUOUS.99.unaligned
 
-
+	python ${MYSCRIPTS}/analyze_assembly.py  ${newref}  iqc500.QC.AMBIGUOUS.99.unaligned sqc500.QC.AMBIGUOUS.99.unaligned \
+	mqc500.QC.AMBIGUOUS.99.unaligned unaligned-iqc.coords unaligned-sqc.coords unaligned-mqc.coords UNALIGNED-AMBIGOUS.99 -a True 99
 
 #------------------------------------------------------------Finding Chimeric Reads-------------------------------------------------------------------------- 
 #This is an ignored part 
